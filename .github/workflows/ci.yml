@@ -7,24 +7,27 @@ on:
 jobs:
   build-test-push:
     runs-on: ubuntu-latest
-    services:
-      sqlserver:
-        image: exoplatform/sqlserver:latest
-        env:
-          SA_PASSWORD: Admin123!
-          ACCEPT_EULA: "Y"
-          SQLSERVER_DATABASE: AppCustomerDiiageDbe
-          SQLSERVER_USER: sa
-          SQLSERVER_PASSWORD: Admin123!
-        ports:
-          - 1433:1433
     steps:
       - uses: actions/checkout@v4
+
+      - name: Create test network
+        run: docker network create test-net
+
+      - name: Start SQL Server
+        run: |
+          docker run -d --name sqlserver-test \
+            --network test-net \
+            -e SA_PASSWORD=Admin123! \
+            -e ACCEPT_EULA=Y \
+            -e SQLSERVER_DATABASE=AppCustomerDiiageDbe \
+            -e SQLSERVER_USER=sa \
+            -e SQLSERVER_PASSWORD=Admin123! \
+            exoplatform/sqlserver:latest
 
       - name: Wait for SQL Server to be ready
         run: |
           for i in {1..30}; do
-            if nc -z sqlserver 1433; then
+            if docker logs sqlserver-test 2>&1 | grep -q "SQL Server is now ready"; then
               echo "SQL Server is up!"
               break
             fi
@@ -38,7 +41,8 @@ jobs:
       - name: Test Docker image
         run: |
           docker run --rm \
-            -e ConnectionStrings__DefaultConnection="Server=sqlserver,1433;Database=AppCustomerDiiageDbe;User=sa;Password=Admin123!;TrustServerCertificate=True;" \
+            --network test-net \
+            -e ConnectionStrings__DefaultConnection="Server=sqlserver-test,1433;Database=AppCustomerDiiageDbe;User=sa;Password=Admin123!;TrustServerCertificate=True;" \
             docker.io/ttmartinksdocket/tp3-web:latest dotnet --info
 
       - name: Login to Docker Hub
@@ -46,3 +50,7 @@ jobs:
 
       - name: Push Docker image
         run: docker push docker.io/ttmartinksdocket/tp3-web:latest
+
+      - name: Cleanup SQL Server
+        if: always()
+        run: docker rm -f sqlserver-test || true
