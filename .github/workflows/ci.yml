@@ -1,0 +1,23 @@
+name: Build and Push Docker image
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-test-push:
+    runs-on: self-hosted # ou 'ubuntu-latest' si tu n'utilises pas de runner local
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ${{ secrets.REGISTRY }}/ttmartinksdocket/tp3-web:latest .
+
+      - name: Test Docker image
+        run: docker run --rm ${{ secrets.REGISTRY }}/ttmartinksdocket/tp3-web:latest dotnet --info
+
+      - name: Login to registry
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY }} -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+
+      - name: Push Docker image
+        run: docker push ${{ secrets.REGISTRY }}/<votre_user>/tp3-web:latest
