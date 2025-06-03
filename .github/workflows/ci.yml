@@ -11,13 +11,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t ${{ secrets.REGISTRY }}/ttmartinksdocket/tp3-web:latest .
+        run: docker build -t docker.io/ttmartinksdocket/tp3-web:latest .
 
       - name: Test Docker image
-        run: docker run --rm ${{ secrets.REGISTRY }}/ttmartinksdocket/tp3-web:latest dotnet --info
+        run: docker run --rm docker.io/ttmartinksdocket/tp3-web:latest dotnet --info
 
-      - name: Login to registry
-        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login ${{ secrets.REGISTRY }} -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login docker.io -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
       - name: Push Docker image
-        run: docker push ${{ secrets.REGISTRY }}/<votre_user>/tp3-web:latest
+        run: docker push docker.io/ttmartinksdocket/tp3-web:latest
