@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-test-push:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     services:
       sqlserver:
         image: exoplatform/sqlserver:latest
