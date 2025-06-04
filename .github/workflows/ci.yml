@@ -23,11 +23,11 @@ jobs:
         run: |
           docker run -d --name sqlserver-test \
             --network test-net \
-            -e SA_PASSWORD=${SQLSERVER_PASSWORD} \
+            -e SA_PASSWORD="${SQLSERVER_PASSWORD}" \
             -e ACCEPT_EULA=Y \
             -e SQLSERVER_DATABASE=AppCustomerDiiageDbe \
-            -e SQLSERVER_USER=${SQLSERVER_USER} \
-            -e SQLSERVER_PASSWORD=${SQLSERVER_PASSWORD} \
+            -e SQLSERVER_USER="${SQLSERVER_USER}" \
+            -e SQLSERVER_PASSWORD="${SQLSERVER_PASSWORD}" \
             exoplatform/sqlserver:latest
 
       - name: Wait for SQL Server to be ready
@@ -51,7 +51,7 @@ jobs:
             -e ASPNETCORE_ENVIRONMENT=Development \
             -e ConnectionStrings__DefaultConnection="Server=sqlserver-test,1433;Database=AppCustomerDiiageDbe;User=${SQLSERVER_USER};Password=${SQLSERVER_PASSWORD};TrustServerCertificate=True;" \
             -p 8080:80 \
-            $REGISTRY/ttmartinksdocket/tp3-web:latest
+            ${REGISTRY}/ttmartinksdocket/tp3-web:latest
 
       - name: Test HTTP endpoint
         run: |
@@ -68,10 +68,10 @@ jobs:
         run: docker rm -f tp3-web-test
 
       - name: Login to Docker Registry
-        run: echo "${REGISTRY_PASSWORD}" | docker login $REGISTRY -u "${REGISTRY_USER}" --password-stdin
+        run: echo "${REGISTRY_PASSWORD}" | docker login ${REGISTRY} -u "${REGISTRY_USER}" --password-stdin
 
       - name: Push Docker image
-        run: docker push $REGISTRY/ttmartinksdocket/tp3-web:latest
+        run: docker push ${REGISTRY}/ttmartinksdocket/tp3-web:latest
 
       - name: Cleanup SQL Server
         if: always()
