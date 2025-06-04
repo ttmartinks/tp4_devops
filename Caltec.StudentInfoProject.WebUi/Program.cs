@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=db,1433;Database=AppCustomerDiiageDbe;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;";
+    ?? "Server=db,1433;Database=AppCustomerDiiageDbe;User=sa;Password=Admin123!;TrustServerCertificate=True;";
 
 // Add services to the container.
 builder.Services.AddRazorPages();

@@ -1,11 +1,14 @@
 services:
   db:
-    image: kurthunter/sqlserver:v2
-    container_name: sqlserver-db
+    image: exoplatform/sqlserver:latest
+    container_name: sqlserver-db2
     restart: always
     environment:
-      SA_PASSWORD: YourStrong!Passw0rd
+      SA_PASSWORD: ${SQLSERVER_PASSWORD}
       ACCEPT_EULA: "Y"
+      SQLSERVER_DATABASE: AppCustomerDiiageDbe
+      SQLSERVER_USER: ${SQLSERVER_USER}
+      SQLSERVER_PASSWORD: ${SQLSERVER_PASSWORD}
     volumes:
       - dbdata:/var/opt/mssql
     networks:
@@ -19,7 +22,7 @@ services:
       - "8080:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=AppCustomerDiiageDbe;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Server=db,1433;Database=AppCustomerDiiageDbe;User=${SQLSERVER_USER};Password=${SQLSERVER_PASSWORD};TrustServerCertificate=True;
     networks:
       - backend
 
