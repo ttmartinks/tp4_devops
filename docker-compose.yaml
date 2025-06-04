@@ -14,7 +14,7 @@ services:
     networks:
       - backend
   web:
-    image: tp3
+    image: docker.io/ttmartinksdocket/tp3-web:latest
     container_name: tp3-web
     depends_on:
       - db
