@@ -1,0 +1,34 @@
+name: Deploy (CD) - Local
+
+on:
+  workflow_run:
+    workflows: ["Build, Test and Push Docker image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Récupérer la dernière image
+        run: docker compose pull
+
+      - name: Arrêter les anciens conteneurs
+        run: docker compose down
+
+      - name: Démarrer la nouvelle version
+        run: docker compose up -d
+
+      - name: Vérifier que l'application répond
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "App is responding!"
+              break
+            fi
+            echo "Waiting for app..."
+            sleep 2
+          done
