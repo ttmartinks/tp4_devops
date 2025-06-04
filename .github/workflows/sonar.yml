@@ -36,6 +36,9 @@ jobs:
         shell: powershell
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"ttmartinks_tp4_devops" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="http://localhost:9000"
-          dotnet build
-          dotnet test --no-build
-          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          try {
+            dotnet build -v minimal -warnaserror
+            dotnet test --no-build --logger:"console;verbosity=normal"
+          } finally {
+            .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          }
