@@ -1,0 +1,78 @@
+name: Build, Test and Push Docker image
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ secrets.REGISTRY }}
+      REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      SQLSERVER_USER: ${{ secrets.SQLSERVER_USER }}
+      SQLSERVER_PASSWORD: ${{ secrets.SQLSERVER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create test network
+        run: docker network create test-net
+
+      - name: Start SQL Server
+        run: |
+          docker run -d --name sqlserver-test \
+            --network test-net \
+            -e SA_PASSWORD=${SQLSERVER_PASSWORD} \
+            -e ACCEPT_EULA=Y \
+            -e SQLSERVER_DATABASE=AppCustomerDiiageDbe \
+            -e SQLSERVER_USER=${SQLSERVER_USER} \
+            -e SQLSERVER_PASSWORD=${SQLSERVER_PASSWORD} \
+            exoplatform/sqlserver:latest
+
+      - name: Wait for SQL Server to be ready
+        run: |
+          for i in {1..30}; do
+            if docker logs sqlserver-test 2>&1 | grep -q "SQL Server is now ready"; then
+              echo "SQL Server is up!"
+              break
+            fi
+            echo "Waiting for SQL Server..."
+            sleep 2
+          done
+
+      - name: Build Docker image
+        run: docker build -t $REGISTRY/ttmartinksdocket/tp3-web:latest .
+
+      - name: Run app in background
+        run: |
+          docker run -d --name tp3-web-test \
+            --network test-net \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            -e ConnectionStrings__DefaultConnection="Server=sqlserver-test,1433;Database=AppCustomerDiiageDbe;User=${SQLSERVER_USER};Password=${SQLSERVER_PASSWORD};TrustServerCertificate=True;" \
+            -p 8080:80 \
+            $REGISTRY/ttmartinksdocket/tp3-web:latest
+
+      - name: Test HTTP endpoint
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:8080 > /dev/null; then
+              echo "App is responding!"
+              break
+            fi
+            echo "Waiting for app..."
+            sleep 2
+          done
+
+      - name: Stop app container
+        run: docker rm -f tp3-web-test
+
+      - name: Login to Docker Registry
+        run: echo "${REGISTRY_PASSWORD}" | docker login $REGISTRY -u "${REGISTRY_USER}" --password-stdin
+
+      - name: Push Docker image
+        run: docker push $REGISTRY/ttmartinksdocket/tp3-web:latest
+
+      - name: Cleanup SQL Server
+        if: always()
+        run: docker rm -f sqlserver-test || true
