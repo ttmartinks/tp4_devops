@@ -7,6 +7,12 @@ on:
 jobs:
   build-test-push:
     runs-on: ubuntu-latest
+    env:
+      REGISTRY: ${{ secrets.REGISTRY }}
+      REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+      REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      SQLSERVER_USER: ${{ secrets.SQLSERVER_USER }}
+      SQLSERVER_PASSWORD: ${{ secrets.SQLSERVER_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -17,11 +23,11 @@ jobs:
         run: |
           docker run -d --name sqlserver-test \
             --network test-net \
-            -e SA_PASSWORD=Admin123! \
+            -e SA_PASSWORD=${SQLSERVER_PASSWORD} \
             -e ACCEPT_EULA=Y \
             -e SQLSERVER_DATABASE=AppCustomerDiiageDbe \
-            -e SQLSERVER_USER=sa \
-            -e SQLSERVER_PASSWORD=Admin123! \
+            -e SQLSERVER_USER=${SQLSERVER_USER} \
+            -e SQLSERVER_PASSWORD=${SQLSERVER_PASSWORD} \
             exoplatform/sqlserver:latest
 
       - name: Wait for SQL Server to be ready
@@ -36,16 +42,16 @@ jobs:
           done
 
       - name: Build Docker image
-        run: docker build -t docker.io/ttmartinksdocket/tp3-web:latest .
+        run: docker build -t $REGISTRY/ttmartinksdocket/tp3-web:latest .
 
       - name: Run app in background
         run: |
           docker run -d --name tp3-web-test \
             --network test-net \
             -e ASPNETCORE_ENVIRONMENT=Development \
-            -e ConnectionStrings__DefaultConnection="Server=sqlserver-test,1433;Database=AppCustomerDiiageDbe;User=sa;Password=Admin123!;TrustServerCertificate=True;" \
+            -e ConnectionStrings__DefaultConnection="Server=sqlserver-test,1433;Database=AppCustomerDiiageDbe;User=${SQLSERVER_USER};Password=${SQLSERVER_PASSWORD};TrustServerCertificate=True;" \
             -p 8080:80 \
-            docker.io/ttmartinksdocket/tp3-web:latest
+            $REGISTRY/ttmartinksdocket/tp3-web:latest
 
       - name: Test HTTP endpoint
         run: |
@@ -61,11 +67,11 @@ jobs:
       - name: Stop app container
         run: docker rm -f tp3-web-test
 
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login docker.io -u "${{ secrets.REGISTRY_USER }}" --password-stdin
+      - name: Login to Docker Registry
+        run: echo "${REGISTRY_PASSWORD}" | docker login $REGISTRY -u "${REGISTRY_USER}" --password-stdin
 
       - name: Push Docker image
-        run: docker push docker.io/ttmartinksdocket/tp3-web:latest
+        run: docker push $REGISTRY/ttmartinksdocket/tp3-web:latest
 
       - name: Cleanup SQL Server
         if: always()
