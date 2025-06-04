@@ -9,6 +9,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SQLSERVER_USER: ${{ secrets.SQLSERVER_USER }}
+      SQLSERVER_PASSWORD: ${{ secrets.SQLSERVER_PASSWORD }}
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
