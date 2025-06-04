@@ -42,7 +42,7 @@ jobs:
           done
 
       - name: Build Docker image
-        run: docker build -t $REGISTRY/ttmartinksdocket/tp3-web:latest .
+        run: docker build -t ${REGISTRY}/ttmartinksdocket/tp3-web:latest .
 
       - name: Run app in background
         run: |
